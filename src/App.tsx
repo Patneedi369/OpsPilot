@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AppView, Incident, Investigation, UserRole } from './types';
 import { incidents as seedIncidents } from './data/incidents';
+import { fetchIncidents } from './services/api';
 import { AppStateContext } from './hooks/useAppState';
 import { Sidebar } from './components/layout/Sidebar';
 import { Topbar } from './components/layout/Topbar';
@@ -19,6 +20,18 @@ export default function App() {
   const [incidents, setIncidents] = useState<Incident[]>(seedIncidents);
   const [investigations, setInvestigations] = useState<Record<string, Investigation>>({});
   const [auditNotes, setAuditNotes] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchIncidents().then((list) => {
+      if (!cancelled && list.length > 0) {
+        setIncidents(list);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const openIncident = useCallback((id: string) => {
     setSelectedIncidentId(id);

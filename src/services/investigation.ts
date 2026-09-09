@@ -1,5 +1,6 @@
 import type { Investigation } from '../types';
 import { mockInvestigations } from '../data/investigations';
+import { apiRequest } from './api';
 
 export function investigateEndpoint(incidentId: string): string {
   return `/api/v1/incidents/${incidentId}/investigate`;
@@ -49,11 +50,18 @@ function fallbackInvestigation(incidentId: string): Investigation {
   };
 }
 
+function mockInvestigate(incidentId: string): Investigation {
+  const result = mockInvestigations[incidentId] ?? fallbackInvestigation(incidentId);
+  return { ...result, status: 'complete', incidentId };
+}
+
 export const investigationService: InvestigationService = {
   async investigate(incidentId: string): Promise<Investigation> {
-    // Later this becomes: POST investigateEndpoint(incidentId)
-    await mockDelay();
-    const result = mockInvestigations[incidentId] ?? fallbackInvestigation(incidentId);
-    return { ...result, status: 'complete', incidentId };
+    try {
+      return await apiRequest<Investigation>(investigateEndpoint(incidentId), { method: 'POST' });
+    } catch {
+      await mockDelay();
+      return mockInvestigate(incidentId);
+    }
   },
 };
