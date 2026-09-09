@@ -1,5 +1,7 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.repositories.incident_repository import incident_repository
 from app.schemas.incident import Incident
-from app.services.incident_catalog import INCIDENTS
 
 
 class IncidentNotFoundError(Exception):
@@ -8,12 +10,17 @@ class IncidentNotFoundError(Exception):
         super().__init__(f"Incident {incident_id} not found")
 
 
-def list_incidents() -> list[Incident]:
-    return list(INCIDENTS)
+def _to_schema(row: object) -> Incident:
+    return Incident.model_validate(row, from_attributes=True)
 
 
-def get_incident(incident_id: str) -> Incident:
-    for incident in INCIDENTS:
-        if incident.id == incident_id:
-            return incident
-    raise IncidentNotFoundError(incident_id)
+async def list_incidents(session: AsyncSession) -> list[Incident]:
+    rows = await incident_repository.list_all(session)
+    return [_to_schema(row) for row in rows]
+
+
+async def get_incident(session: AsyncSession, incident_id: str) -> Incident:
+    row = await incident_repository.get_by_id(session, incident_id)
+    if row is None:
+        raise IncidentNotFoundError(incident_id)
+    return _to_schema(row)

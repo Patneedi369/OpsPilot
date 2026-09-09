@@ -1,5 +1,6 @@
 import logging
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -11,15 +12,25 @@ from starlette.responses import Response
 from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.db.session import engine
+from app.models import Deployment, Incident, IncidentEvent, LogEntry  # noqa: F401
 
 settings = get_settings()
 configure_logging(settings.log_level)
 logger = logging.getLogger("opspilot")
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    yield
+    await engine.dispose()
+
+
 app = FastAPI(
     title="OpsPilot API",
-    version="0.2.0",
+    version="0.3.0",
     description="AI-powered SRE / Incident Intelligence platform API",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
