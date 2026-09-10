@@ -22,4 +22,8 @@ class InvestigationGraphState(TypedDict, total=False):
     approval_actor: str | None
     approval_note: str | None
     execution_summary: str | None
+    execution_result: dict[str, Any] | None
+    verification_result: dict[str, Any] | None
+    simulate_execution_failure: bool
+    simulate_verification_failure: bool
     error: str | None

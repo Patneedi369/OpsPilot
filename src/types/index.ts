@@ -118,10 +118,58 @@ export interface RootCause {
   model: string;
 }
 
+export type InvestigationRunStatus =
+  | 'running'
+  | 'awaiting_approval'
+  | 'approved'
+  | 'rejected'
+  | 'executing'
+  | 'verifying_recovery'
+  | 'recovered'
+  | 'remediation_failed'
+  | 'verification_failed'
+  | 'completed'
+  | 'failed';
+
+export interface RemediationExecutionDetail {
+  startedAt: string;
+  completedAt: string;
+  status: 'succeeded' | 'failed';
+  actionsPerformed: Array<{ action: string; status: string; durationMs?: string }>;
+  details: string;
+  error?: string;
+}
+
+export interface RecoveryVerificationDetail {
+  verifiedAt: string;
+  status: 'recovered' | 'verification_failed';
+  signalsChecked: Array<{ metric: string; observed: number; threshold: number; unit: string; status: 'PASS' | 'FAIL' }>;
+  details: string;
+  error?: string;
+}
+
+export interface InvestigationRun {
+  id: string;
+  incidentId: string;
+  threadId: string;
+  status: InvestigationRunStatus;
+  currentStep: string;
+  startedAt: string;
+  completedAt?: string;
+  finalResult?: Record<string, unknown>;
+  errorMessage?: string;
+  approvalDecision?: 'approved' | 'rejected';
+  approvalActor?: string;
+  approvalNote?: string;
+  approvedAt?: string;
+  executionResult?: RemediationExecutionDetail;
+  verificationResult?: RecoveryVerificationDetail;
+}
+
 export interface Investigation {
   id: string;
   incidentId: string;
-  status: 'idle' | 'running' | 'complete' | 'failed';
+  status: 'idle' | 'running' | 'complete' | 'failed' | InvestigationRunStatus;
   evidence: Evidence[];
   reasoning: string;
   rootCause: RootCause | null;

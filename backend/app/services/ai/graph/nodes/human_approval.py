@@ -35,10 +35,18 @@ async def human_approval_node(state: InvestigationGraphState) -> dict[str, Any]:
     decision = str(resume_data.get("decision", "rejected")).lower()
     actor = str(resume_data.get("actor", "sre-oncall"))
     note = str(resume_data.get("note", ""))
+    simulate_exec_fail = bool(resume_data.get("simulate_execution_failure"))
+    simulate_ver_fail = bool(resume_data.get("simulate_verification_failure"))
 
     logger.info(
         "human approval decision received",
-        extra={"incident_id": incident_id, "decision": decision, "actor": actor},
+        extra={
+            "incident_id": incident_id,
+            "decision": decision,
+            "actor": actor,
+            "simulate_execution_failure": simulate_exec_fail,
+            "simulate_verification_failure": simulate_ver_fail,
+        },
     )
 
     return {
@@ -47,4 +55,6 @@ async def human_approval_node(state: InvestigationGraphState) -> dict[str, Any]:
         "approval_decision": decision,
         "approval_actor": actor,
         "approval_note": note,
+        "simulate_execution_failure": simulate_exec_fail,
+        "simulate_verification_failure": simulate_ver_fail,
     }

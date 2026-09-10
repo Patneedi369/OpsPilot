@@ -4,21 +4,15 @@ from uuid import uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.deployment import Deployment
-from app.models.incident import Incident
-from app.models.incident_event import IncidentEvent
 from app.models.investigation_run import InvestigationRun
-from app.models.log_entry import LogEntry
 from app.repositories.incident_repository import incident_repository
 from app.repositories.investigation_repository import investigation_repository
 from app.schemas.investigation import InvestigationResult
-from app.services.ai.context import InvestigationContext, build_context
+from app.services.ai.context import build_context
 from app.services.ai.graph.workflow import get_graph_state, run_or_resume_graph
 from app.services.incidents import IncidentNotFoundError
 
 logger = logging.getLogger("opspilot.services.investigation")
-
-
 
 
 class RunNotFoundError(Exception):
@@ -77,7 +71,7 @@ async def start_investigation_run(session: AsyncSession, incident_id: str) -> In
 
         status = final_state.get("status", "completed")
         current_step = final_state.get("current_step", "completed")
-        completed_at = datetime.now(timezone.utc).isoformat() if status in ("completed", "rejected") else None
+        completed_at = datetime.now(timezone.utc).isoformat() if status in ("completed", "rejected", "recovered") else None
 
         updated = await investigation_repository.update_run(
             session,
@@ -87,6 +81,8 @@ async def start_investigation_run(session: AsyncSession, incident_id: str) -> In
                 "current_step": current_step,
                 "completed_at": completed_at,
                 "final_result": result_dict,
+                "execution_result": final_state.get("execution_result"),
+                "verification_result": final_state.get("verification_result"),
             },
         )
         return updated or db_run
@@ -116,7 +112,14 @@ async def list_runs(session: AsyncSession, incident_id: str) -> list[Investigati
     return await investigation_repository.list_runs_for_incident(session, incident_id)
 
 
-async def approve_run(session: AsyncSession, run_id: str, actor: str = "sre-lead", note: str = "Approved via OpsPilot workflow") -> InvestigationRun:
+async def approve_run(
+    session: AsyncSession,
+    run_id: str,
+    actor: str = "sre-lead",
+    note: str = "Approved via OpsPilot workflow",
+    simulate_execution_failure: bool = False,
+    simulate_verification_failure: bool = False,
+) -> InvestigationRun:
     run = await get_run(session, run_id)
     now_iso = datetime.now(timezone.utc).isoformat()
 
@@ -132,20 +135,31 @@ async def approve_run(session: AsyncSession, run_id: str, actor: str = "sre-lead
         },
     )
 
-    resume_payload = {"decision": "approved", "actor": actor, "note": note}
+    resume_payload = {
+        "decision": "approved",
+        "actor": actor,
+        "note": note,
+        "simulate_execution_failure": simulate_execution_failure,
+        "simulate_verification_failure": simulate_verification_failure,
+    }
     final_state = await run_or_resume_graph(thread_id=run.thread_id, resume_payload=resume_payload)
 
     result: InvestigationResult | None = final_state.get("result")
     result_dict = result.model_dump(by_alias=True) if result else run.final_result
+    status = final_state.get("status", "recovered")
+    current_step = final_state.get("current_step", "recovered")
 
     updated = await investigation_repository.update_run(
         session,
         run_id,
         {
-            "status": "completed",
-            "current_step": "completed",
+            "status": status,
+            "current_step": current_step,
             "completed_at": datetime.now(timezone.utc).isoformat(),
             "final_result": result_dict,
+            "execution_result": final_state.get("execution_result"),
+            "verification_result": final_state.get("verification_result"),
+            "error_message": final_state.get("error"),
         },
     )
     return updated or run
@@ -181,6 +195,8 @@ async def reject_run(session: AsyncSession, run_id: str, actor: str = "sre-lead"
             "current_step": "rejected",
             "completed_at": datetime.now(timezone.utc).isoformat(),
             "final_result": result_dict,
+            "execution_result": final_state.get("execution_result"),
+            "verification_result": final_state.get("verification_result"),
         },
     )
     return updated or run
@@ -194,7 +210,6 @@ async def investigate_incident(session: AsyncSession, incident_id: str) -> Inves
     if latest_run.final_result:
         return InvestigationResult.model_validate(latest_run.final_result)
 
-    # Fallback to context investigation
     events = await incident_repository.list_events(session, incident_id)
     logs = await incident_repository.list_logs(session, incident_id)
     incident = await incident_repository.get_by_id(session, incident_id)

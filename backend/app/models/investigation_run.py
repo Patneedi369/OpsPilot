@@ -22,3 +22,5 @@ class InvestigationRun(Base):
     approval_actor: Mapped[str | None] = mapped_column(String(64), nullable=True)
     approval_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     approved_at: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    execution_result: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    verification_result: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)

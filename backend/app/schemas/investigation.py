@@ -72,6 +72,8 @@ class InvestigationRunResponse(BaseModel):
     approval_actor: str | None = Field(default=None, alias="approvalActor")
     approval_note: str | None = Field(default=None, alias="approvalNote")
     approved_at: str | None = Field(default=None, alias="approvedAt")
+    execution_result: dict[str, Any] | None = Field(default=None, alias="executionResult")
+    verification_result: dict[str, Any] | None = Field(default=None, alias="verificationResult")
 
 
 class ApprovalRequest(BaseModel):
@@ -79,6 +81,8 @@ class ApprovalRequest(BaseModel):
 
     actor: str = "sre-lead"
     note: str = "Approved via OpsPilot workflow"
+    simulate_execution_failure: bool = False
+    simulate_verification_failure: bool = False
 
 
 class PendingApprovalResponse(BaseModel):

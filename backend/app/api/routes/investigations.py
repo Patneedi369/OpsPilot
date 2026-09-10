@@ -112,7 +112,14 @@ async def approve_investigation_remediation(
     session: AsyncSession = Depends(get_db),
 ) -> InvestigationRunResponse:
     try:
-        return await approve_run(session, run_id, actor=payload.actor, note=payload.note)
+        return await approve_run(
+            session,
+            run_id,
+            actor=payload.actor,
+            note=payload.note,
+            simulate_execution_failure=payload.simulate_execution_failure,
+            simulate_verification_failure=payload.simulate_verification_failure,
+        )
     except RunNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 

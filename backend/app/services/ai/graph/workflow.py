@@ -9,6 +9,7 @@ from app.services.ai.graph.checkpointer import get_checkpointer
 from app.services.ai.graph.nodes import (
     context_collector_node,
     human_approval_node,
+    recovery_verifier_node,
     remediation_executor_node,
     remediation_recommender_node,
     remediation_rejected_node,
@@ -27,6 +28,13 @@ def route_approval(state: InvestigationGraphState) -> str:
     return "remediation_rejected"
 
 
+def route_execution(state: InvestigationGraphState) -> str:
+    status = state.get("status")
+    if status == "remediation_failed":
+        return END
+    return "recovery_verifier"
+
+
 async def get_compiled_graph():
     checkpointer = await get_checkpointer()
     builder = StateGraph(InvestigationGraphState)
@@ -37,6 +45,7 @@ async def get_compiled_graph():
     builder.add_node("remediation_recommender", remediation_recommender_node)
     builder.add_node("human_approval", human_approval_node)
     builder.add_node("remediation_executor", remediation_executor_node)
+    builder.add_node("recovery_verifier", recovery_verifier_node)
     builder.add_node("remediation_rejected", remediation_rejected_node)
 
     builder.add_edge(START, "context_collector")
@@ -54,7 +63,16 @@ async def get_compiled_graph():
         },
     )
 
-    builder.add_edge("remediation_executor", END)
+    builder.add_conditional_edges(
+        "remediation_executor",
+        route_execution,
+        {
+            "recovery_verifier": "recovery_verifier",
+            END: END,
+        },
+    )
+
+    builder.add_edge("recovery_verifier", END)
     builder.add_edge("remediation_rejected", END)
 
     return builder.compile(checkpointer=checkpointer)

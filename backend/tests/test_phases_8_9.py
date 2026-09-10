@@ -54,8 +54,8 @@ class TestPhases8And9(unittest.IsolatedAsyncioTestCase):
             run = await start_investigation_run(session, "INC-2043")
             approved_run = await approve_run(session, run.id, actor="sre-lead", note="Approve composite index")
             self.assertEqual(approved_run.id, run.id)
-            self.assertEqual(approved_run.status, "completed")
-            self.assertEqual(approved_run.current_step, "completed")
+            self.assertIn(approved_run.status, ("completed", "recovered"))
+            self.assertIn(approved_run.current_step, ("completed", "recovered"))
             self.assertEqual(approved_run.approval_decision, "approved")
 
     async def test_05_rejection_does_not_execute_remediation(self):
@@ -78,7 +78,7 @@ class TestPhases8And9(unittest.IsolatedAsyncioTestCase):
             fetched_run = await get_run(session2, run_id)
             self.assertEqual(fetched_run.id, run_id)
             resumed_run = await approve_run(session2, run_id, actor="sre-manager", note="Resumed from new session")
-            self.assertEqual(resumed_run.status, "completed")
+            self.assertIn(resumed_run.status, ("completed", "recovered"))
 
     async def test_07_existing_investigation_endpoint_compatible(self):
         """Test 7: POST /api/v1/incidents/INC-2043/investigate remains fully compatible."""
