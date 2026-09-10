@@ -59,3 +59,27 @@ export async function fetchIncidentById(incidentId: string): Promise<Incident | 
     return getIncident(incidentId);
   }
 }
+
+export interface AuditLogRecord {
+  id: string;
+  user_id: string;
+  username: string;
+  user_role: string;
+  action: string;
+  resource_type: string;
+  resource_id: string;
+  outcome: string;
+  metadata_json?: Record<string, unknown>;
+  created_at: string;
+}
+
+export async function fetchAuditLogs(roleHeader = 'Lead'): Promise<AuditLogRecord[]> {
+  try {
+    return await apiRequest<AuditLogRecord[]>('/api/v1/audit/logs', {
+      headers: { 'X-User-Role': roleHeader },
+    });
+  } catch {
+    return [];
+  }
+}
+

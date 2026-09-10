@@ -26,6 +26,19 @@ async def start_investigation_run(session: AsyncSession, incident_id: str) -> In
     if incident is None:
         raise IncidentNotFoundError(incident_id)
 
+    # Idempotency check: return existing active run if present
+    existing_runs = await investigation_repository.list_runs_for_incident(session, incident_id)
+    active_run = next(
+        (r for r in existing_runs if r.status in ["running", "awaiting_approval", "executing", "verifying_recovery"]),
+        None,
+    )
+    if active_run:
+        logger.info(
+            "idempotent investigation request: active run found",
+            extra={"incident_id": incident_id, "run_id": active_run.id, "status": active_run.status},
+        )
+        return active_run
+
     now_iso = datetime.now(timezone.utc).isoformat()
     run_uuid = uuid4().hex[:8]
     run_id = f"run-{incident_id}-{run_uuid}"

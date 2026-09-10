@@ -21,11 +21,69 @@ services:
     container_name: opspilot-redis
     ports:
       - "6379:6379"
+    volumes:
+      - opspilot_redisdata:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: opspilot-backend
+    ports:
+      - "8000:8000"
+    environment:
+      APP_NAME: opspilot-api
+      APP_ENV: production
+      LOG_LEVEL: INFO
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/opspilot
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: opspilot-production-secret-jwt-key-2026
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000,http://localhost:80
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: opspilot-worker
+    command: ["python", "-m", "app.workers.run_stub"]
+    environment:
+      LOG_LEVEL: INFO
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/opspilot
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: opspilot-frontend
+    ports:
+      - "5173:80"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+
 volumes:
   opspilot_pgdata:
+  opspilot_redisdata:

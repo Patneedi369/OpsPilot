@@ -1,5 +1,4 @@
 from functools import lru_cache
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,12 +12,16 @@ class Settings(BaseSettings):
     app_name: str = "opspilot-api"
     app_env: str = "development"
     api_v1_prefix: str = "/api/v1"
-    host: str = "127.0.0.1"
+    host: str = "0.0.0.0"
     port: int = 8000
     log_level: str = "INFO"
+    secret_key: str = "opspilot-secure-secret-key-2026-prod"
+    jwt_algorithm: str = "HS256"
+    ai_timeout_seconds: float = 30.0
     cors_origins: str = (
         "http://localhost:5173,http://127.0.0.1:5173,"
-        "http://localhost:5174,http://127.0.0.1:5174"
+        "http://localhost:5174,http://127.0.0.1:5174,"
+        "http://localhost:3000,http://127.0.0.1:3000"
     )
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5433/opspilot"
     redis_url: str = "redis://localhost:6379/0"

@@ -4,8 +4,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class HealthResponse(BaseModel):
-    status: Literal["ok"]
+    status: Literal["ok", "degraded", "unhealthy"]
     service: str
+    components: dict[str, str] | None = None
 
 
 class ErrorResponse(BaseModel):
