@@ -20,7 +20,7 @@ class Settings(BaseSettings):
         "http://localhost:5173,http://127.0.0.1:5173,"
         "http://localhost:5174,http://127.0.0.1:5174"
     )
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/opspilot"
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5433/opspilot"
     redis_url: str = "redis://localhost:6379/0"
     anthropic_api_key: str = ""
     ai_model: str = "claude-sonnet-4-6"

@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -54,3 +54,39 @@ class InvestigationResult(BaseModel):
     remediations: list[RemediationOption]
     model: str
     provider: str
+
+
+class InvestigationRunResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, serialize_by_alias=True, from_attributes=True)
+
+    id: str
+    incident_id: str = Field(alias="incidentId")
+    thread_id: str = Field(alias="threadId")
+    status: str
+    current_step: str = Field(alias="currentStep")
+    started_at: str = Field(alias="startedAt")
+    completed_at: str | None = Field(default=None, alias="completedAt")
+    final_result: dict[str, Any] | None = Field(default=None, alias="finalResult")
+    error_message: str | None = Field(default=None, alias="errorMessage")
+    approval_decision: str | None = Field(default=None, alias="approvalDecision")
+    approval_actor: str | None = Field(default=None, alias="approvalActor")
+    approval_note: str | None = Field(default=None, alias="approvalNote")
+    approved_at: str | None = Field(default=None, alias="approvedAt")
+
+
+class ApprovalRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, serialize_by_alias=True)
+
+    actor: str = "sre-lead"
+    note: str = "Approved via OpsPilot workflow"
+
+
+class PendingApprovalResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, serialize_by_alias=True)
+
+    run_id: str = Field(alias="runId")
+    incident_id: str = Field(alias="incidentId")
+    thread_id: str = Field(alias="threadId")
+    status: str
+    recommended_remediation: dict[str, Any] | None = Field(default=None, alias="recommendedRemediation")
+    message: str
