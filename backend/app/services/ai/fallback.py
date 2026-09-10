@@ -98,11 +98,14 @@ INC_2043_RESULT = InvestigationResult(
 
 
 def development_fallback(context: InvestigationContext, model: str) -> InvestigationResult:
+    from app.services.ai.guardrails import guardrail_validator
     investigated_at = datetime.now(timezone.utc).isoformat()
     if context.incident_id == "INC-2043":
-        return INC_2043_RESULT.model_copy(
+        res = INC_2043_RESULT.model_copy(
             update={"investigated_at": investigated_at, "model": model, "provider": "fallback"}
         )
+        return guardrail_validator.validate_and_repair(res, context)
+
     watch = RemediationOption(
         id=f"{context.incident_id}-watch",
         title="Continue monitoring",
@@ -132,7 +135,7 @@ def development_fallback(context: InvestigationContext, model: str) -> Investiga
         f"{context.incident_id} does not currently exhibit an active cascading production failure "
         f"beyond the recorded {context.service_name} signals."
     )
-    return InvestigationResult(
+    raw_res = InvestigationResult(
         id=f"inv-{context.incident_id}",
         incident_id=context.incident_id,
         status="complete",
@@ -159,3 +162,4 @@ def development_fallback(context: InvestigationContext, model: str) -> Investiga
         model=model,
         provider="fallback",
     )
+    return guardrail_validator.validate_and_repair(raw_res, context)

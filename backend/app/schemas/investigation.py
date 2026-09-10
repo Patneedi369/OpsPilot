@@ -54,6 +54,12 @@ class InvestigationResult(BaseModel):
     remediations: list[RemediationOption]
     model: str
     provider: str
+    observed_evidence: list[str] = Field(default_factory=list, alias="observedEvidence")
+    inferred_relationship: str = Field(default="", alias="inferredRelationship")
+    alternative_hypotheses: list[str] = Field(default_factory=list, alias="alternativeHypotheses")
+    assumptions: list[str] = Field(default_factory=list)
+    missing_evidence: list[str] = Field(default_factory=list, alias="missingEvidence")
+    provider_metadata: dict[str, Any] = Field(default_factory=dict, alias="providerMetadata")
 
 
 class InvestigationRunResponse(BaseModel):

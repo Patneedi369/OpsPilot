@@ -68,13 +68,14 @@ class AnthropicInvestigator:
         return parsed
 
     def _to_result(self, context: InvestigationContext, payload: dict, model: str) -> InvestigationResult:
+        from app.services.ai.guardrails import guardrail_validator
         remediations = [RemediationOption.model_validate(item) for item in payload.get("remediations") or []]
         recommended = next((item for item in remediations if item.recommended), remediations[0] if remediations else None)
         if recommended is None:
             raise ValueError("AI response omitted remediations")
         confidence = int(payload.get("confidence") or 0)
         cause = str(payload.get("probable_root_cause") or "")
-        return InvestigationResult.model_validate(
+        raw_res = InvestigationResult.model_validate(
             {
                 "id": f"inv-{context.incident_id}",
                 "incidentId": context.incident_id,
@@ -100,3 +101,4 @@ class AnthropicInvestigator:
                 "provider": "anthropic",
             }
         )
+        return guardrail_validator.validate_and_repair(raw_res, context)

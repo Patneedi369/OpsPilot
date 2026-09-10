@@ -35,5 +35,9 @@ class IncidentRepository:
         )
         return list(result.scalars().all())
 
+    async def list_deployments(self, session: AsyncSession, service_id: str) -> list[Deployment]:
+        return await self.list_deployments_for_service(session, service_id)
+
+
 
 incident_repository = IncidentRepository()

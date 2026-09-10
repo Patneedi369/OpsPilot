@@ -85,6 +85,7 @@ export function AiInvestigation({ incident }: AiInvestigationProps) {
     setExecuting(true);
     updateStage('human_approval', 'executing');
     appendAudit(`${role}: approved remediation "${selected.title}" for ${incident.id}`);
+    void investigationService.approveRun(incident.id);
     const steps = 4;
     for (let i = 0; i < steps; i += 1) {
       setExecIndex(i);

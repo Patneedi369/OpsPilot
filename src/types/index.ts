@@ -175,6 +175,12 @@ export interface Investigation {
   rootCause: RootCause | null;
   remediations: RemediationAction[];
   model: string;
+  observedEvidence?: string[];
+  inferredRelationship?: string;
+  alternativeHypotheses?: string[];
+  assumptions?: string[];
+  missingEvidence?: string[];
+  providerMetadata?: Record<string, unknown>;
 }
 
 export type ApprovalDecision = 'pending' | 'approved' | 'rejected';

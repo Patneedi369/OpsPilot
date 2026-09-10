@@ -8,6 +8,7 @@ export function investigateEndpoint(incidentId: string): string {
 
 export interface InvestigationService {
   investigate(incidentId: string): Promise<Investigation>;
+  approveRun(incidentId: string, runId?: string): Promise<unknown>;
 }
 
 function isInvestigation(value: unknown): value is Investigation {
@@ -85,4 +86,25 @@ export const investigationService: InvestigationService = {
       return offlineFallback(incidentId);
     }
   },
+  async approveRun(incidentId: string, runId?: string): Promise<unknown> {
+    try {
+      let targetRunId = runId;
+      if (!targetRunId) {
+        const runs = await apiRequest<{ id: string; status: string }[]>(`/api/v1/incidents/${incidentId}/runs`);
+        if (Array.isArray(runs) && runs.length > 0) {
+          targetRunId = runs[0].id;
+        }
+      }
+      if (targetRunId) {
+        return await apiRequest(`/api/v1/incidents/runs/${targetRunId}/approve`, {
+          method: 'POST',
+          body: JSON.stringify({ actor: 'SRE' }),
+        });
+      }
+    } catch (err) {
+      console.warn('Backend run approval error:', err);
+    }
+    return null;
+  },
 };
+
