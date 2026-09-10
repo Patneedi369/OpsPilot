@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     )
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/opspilot"
     redis_url: str = "redis://localhost:6379/0"
+    anthropic_api_key: str = ""
+    ai_model: str = "claude-sonnet-4-6"
+    ai_provider: str = "anthropic"
 
     @property
     def cors_origin_list(self) -> list[str]:

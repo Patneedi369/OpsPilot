@@ -10,39 +10,62 @@ export interface InvestigationService {
   investigate(incidentId: string): Promise<Investigation>;
 }
 
-async function mockDelay(ms = 1400): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, ms));
+function isInvestigation(value: unknown): value is Investigation {
+  if (!value || typeof value !== 'object') return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.id === 'string' &&
+    typeof record.incidentId === 'string' &&
+    Array.isArray(record.evidence) &&
+    Array.isArray(record.remediations)
+  );
 }
 
-function fallbackInvestigation(incidentId: string): Investigation {
+function toInvestigation(payload: Investigation): Investigation {
+  return {
+    id: payload.id,
+    incidentId: payload.incidentId,
+    status: payload.status,
+    evidence: payload.evidence,
+    reasoning: payload.reasoning,
+    rootCause: payload.rootCause,
+    remediations: payload.remediations,
+    model: payload.model,
+  };
+}
+
+function offlineFallback(incidentId: string): Investigation {
+  const cached = mockInvestigations[incidentId];
+  if (cached) {
+    return { ...cached, status: 'complete', incidentId };
+  }
   return {
     id: `inv-${incidentId}`,
     incidentId,
     status: 'complete',
-    model: 'claude-sonnet-4-6',
+    model: 'offline-fallback',
     evidence: [
       {
         id: `${incidentId}-evd-1`,
         source: 'metrics',
-        summary: `Telemetry for ${incidentId} is available, but no new cascading failure pattern is present.`,
+        summary: `Backend unavailable; showing local fallback for ${incidentId}.`,
       },
     ],
-    reasoning:
-      'The available signals are consistent with a contained or already-mitigated issue. No unindexed query, pool exhaustion, or correlated deploy is in the current evidence set.',
+    reasoning: 'The investigation API could not be reached, so OpsPilot used the local development fallback.',
     rootCause: {
-      summary: `${incidentId} does not currently exhibit an active cascading production failure.`,
-      confidence: 70,
-      expectedImpactIfUnresolved: 'Limited residual user impact',
-      affectedUsersEstimate: 'contained',
-      model: 'claude-sonnet-4-6',
+      summary: `${incidentId} could not be investigated via the API.`,
+      confidence: 0,
+      expectedImpactIfUnresolved: 'Unknown while the backend is unreachable',
+      affectedUsersEstimate: 'unknown',
+      model: 'offline-fallback',
     },
     remediations: [
       {
-        id: `${incidentId}-watch`,
-        title: 'Continue monitoring',
-        description: 'Keep SLO burn alerts armed and close if the window remains stable.',
+        id: `${incidentId}-retry`,
+        title: 'Retry investigation when API is available',
+        description: 'Start the FastAPI backend and run the investigation again.',
         risk: 'low',
-        etaMinutes: 5,
+        etaMinutes: 1,
         recommended: true,
         kind: 'forward_fix',
       },
@@ -50,18 +73,16 @@ function fallbackInvestigation(incidentId: string): Investigation {
   };
 }
 
-function mockInvestigate(incidentId: string): Investigation {
-  const result = mockInvestigations[incidentId] ?? fallbackInvestigation(incidentId);
-  return { ...result, status: 'complete', incidentId };
-}
-
 export const investigationService: InvestigationService = {
   async investigate(incidentId: string): Promise<Investigation> {
     try {
-      return await apiRequest<Investigation>(investigateEndpoint(incidentId), { method: 'POST' });
+      const payload = await apiRequest<Investigation>(investigateEndpoint(incidentId), { method: 'POST' });
+      if (!isInvestigation(payload)) {
+        throw new Error('Investigation response was missing required fields');
+      }
+      return toInvestigation(payload);
     } catch {
-      await mockDelay();
-      return mockInvestigate(incidentId);
+      return offlineFallback(incidentId);
     }
   },
 };
