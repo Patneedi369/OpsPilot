@@ -17,6 +17,9 @@ async def remediation_executor_node(state: InvestigationGraphState) -> dict[str,
 
     remediation_dict = result.recommended_remediation.model_dump(by_alias=True) if result and result.recommended_remediation else None
 
+    from app.core.events import event_bus
+    event_bus.publish(incident_id=incident_id, event_type="remediation_executing", payload={"remediation": remediation_dict}, status="executing")
+
     exec_res = await remediation_service.execute_remediation(
         incident_id=incident_id,
         remediation=remediation_dict,
@@ -30,6 +33,7 @@ async def remediation_executor_node(state: InvestigationGraphState) -> dict[str,
             "remediation execution failed; halting before verification",
             extra={"incident_id": incident_id, "error": exec_res.error},
         )
+        event_bus.publish(incident_id=incident_id, event_type="remediation_failed", payload=exec_dict, status="remediation_failed")
         return {
             "current_step": "remediation_failed",
             "status": "remediation_failed",
@@ -42,6 +46,8 @@ async def remediation_executor_node(state: InvestigationGraphState) -> dict[str,
         "remediation execution succeeded; advancing to recovery verification",
         extra={"incident_id": incident_id, "summary": exec_res.details},
     )
+
+    event_bus.publish(incident_id=incident_id, event_type="remediation_completed", payload=exec_dict, status="verifying_recovery")
 
     return {
         "current_step": "verifying_recovery",

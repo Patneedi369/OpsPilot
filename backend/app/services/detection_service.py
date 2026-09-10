@@ -161,6 +161,15 @@ async def evaluate_and_correlate(
         session.add(detection_event)
         detection_events.append(detection_event)
 
+        # Publish real-time SSE event
+        from app.core.events import event_bus
+        event_bus.publish(
+            incident_id=target_incident_id,
+            event_type="incident_detected",
+            payload={"rule_name": rule_name, "summary": summary, "service_id": svc_id},
+            status="detected",
+        )
+
         # Trigger workflow if auto_investigate is requested
         if auto_investigate:
             try:

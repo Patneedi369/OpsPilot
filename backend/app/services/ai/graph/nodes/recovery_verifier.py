@@ -14,6 +14,9 @@ async def recovery_verifier_node(state: InvestigationGraphState) -> dict[str, An
 
     logger.info("node started - verifying incident recovery", extra={"node": "recovery_verifier", "incident_id": incident_id})
 
+    from app.core.events import event_bus
+    event_bus.publish(incident_id=incident_id, event_type="recovery_verification_started", payload={}, status="verifying_recovery")
+
     ver_res = await verification_service.verify_recovery(
         incident_id=incident_id,
         simulate_failure=simulate_failure,
@@ -26,6 +29,7 @@ async def recovery_verifier_node(state: InvestigationGraphState) -> dict[str, An
             "recovery verification failed",
             extra={"incident_id": incident_id, "error": ver_res.error},
         )
+        event_bus.publish(incident_id=incident_id, event_type="recovery_verification_failed", payload=ver_dict, status="verification_failed")
         return {
             "current_step": "verification_failed",
             "status": "verification_failed",
@@ -37,6 +41,8 @@ async def recovery_verifier_node(state: InvestigationGraphState) -> dict[str, An
         "recovery verification succeeded - incident recovered",
         extra={"incident_id": incident_id, "signals": len(ver_res.signals_checked)},
     )
+
+    event_bus.publish(incident_id=incident_id, event_type="incident_recovered", payload=ver_dict, status="recovered")
 
     return {
         "current_step": "recovered",

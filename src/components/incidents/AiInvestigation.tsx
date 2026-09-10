@@ -4,6 +4,7 @@ import { investigationService, investigateEndpoint } from '../../services/invest
 import { approvalHint, canApproveRemediation, canRunInvestigation } from '../../lib/permissions';
 import { utcNowLabel } from '../../lib/format';
 import { useAppState } from '../../hooks/useAppState';
+import { useIncidentStream, type IncidentSseEvent } from '../../hooks/useIncidentStream';
 
 interface AiInvestigationProps {
   incident: Incident;
@@ -19,6 +20,25 @@ export function AiInvestigation({ incident }: AiInvestigationProps) {
   const [execIndex, setExecIndex] = useState(-1);
   const [executing, setExecuting] = useState(false);
   const [verified, setVerified] = useState(incident.status === 'resolved');
+
+  useIncidentStream(incident.id, (evt: IncidentSseEvent) => {
+    if (evt.type === 'remediation_executing') {
+      setExecuting(true);
+      setExecIndex(1);
+      upsertIncident(incident.id, { status: 'executing', workflowStage: 'execution' });
+    } else if (evt.type === 'remediation_completed' || evt.type === 'recovery_verification_started') {
+      setExecIndex(3);
+      upsertIncident(incident.id, { status: 'executing', workflowStage: 'verification' });
+    } else if (evt.type === 'incident_recovered') {
+      setExecIndex(4);
+      setVerified(true);
+      setExecuting(false);
+      upsertIncident(incident.id, { status: 'resolved', workflowStage: 'resolution' });
+    } else if (evt.type === 'remediation_rejected') {
+      setRejected(true);
+      setExecuting(false);
+    }
+  });
 
   const selected = useMemo(() => {
     if (!investigation) return undefined;

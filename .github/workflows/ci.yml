@@ -1,0 +1,110 @@
+name: OpsPilot CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  backend-test:
+    name: Backend Unit Tests & Migrations
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: opspilot
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Alembic Migrations
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5433/opspilot
+          REDIS_URL: redis://localhost:6379/0
+        run: |
+          cd backend
+          python -m alembic upgrade head
+
+      - name: Run Backend Unittests
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5433/opspilot
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: ci-test-secret-key-opspilot-2026
+        run: |
+          cd backend
+          python -m unittest tests/test_phases_8_9.py tests/test_phases_10_11.py tests/test_phases_12_13.py tests/test_phases_14_15.py tests/test_phases_16_17.py
+
+  frontend-check:
+    name: Frontend Typecheck & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: TypeScript Typecheck
+        run: npm run typecheck
+
+      - name: Production Build
+        run: npm run build
+
+  docker-validate:
+    name: Docker Build & Compose Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Validate Docker Compose Config
+        run: docker compose config
+
+      - name: Build Backend Docker Image
+        run: docker build -t opspilot-backend:ci ./backend
+
+      - name: Build Frontend Docker Image
+        run: docker build -f Dockerfile.frontend -t opspilot-frontend:ci .
