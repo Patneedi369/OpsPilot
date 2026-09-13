@@ -40,7 +40,7 @@ async def get_checkpointer() -> BaseCheckpointSaver:
         if _global_pool is None:
             _global_pool = AsyncConnectionPool(
                 conninfo=db_url,
-                kwargs={"autocommit": True},
+                kwargs={"autocommit": True, "prepare_threshold": None},
                 min_size=1,
                 max_size=10,
                 open=False,
