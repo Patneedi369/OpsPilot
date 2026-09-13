@@ -136,7 +136,14 @@ async def evaluate_and_correlate(
                     duration_label="just now",
                     elapsed_seconds=0,
                     trigger=summary,
-                    affected_services=[svc_id],
+                    affected_services=[
+                        {
+                            "serviceId": svc_id,
+                            "name": svc_id.replace("-", " ").title(),
+                            "health": "crit",
+                            "metric": "high_latency",
+                        }
+                    ],
                     blast_radius="High impact on latency and API availability",
                     created_at=utcnow(),
                 )
