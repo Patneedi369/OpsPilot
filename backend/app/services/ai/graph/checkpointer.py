@@ -38,13 +38,18 @@ async def get_checkpointer() -> BaseCheckpointSaver:
         from psycopg_pool import AsyncConnectionPool
 
         if _global_pool is None:
-            _global_pool = AsyncConnectionPool(conninfo=db_url, min_size=1, max_size=10, open=False)
+            _global_pool = AsyncConnectionPool(
+                conninfo=db_url,
+                kwargs={"autocommit": True},
+                min_size=1,
+                max_size=10,
+                open=False,
+            )
             await _global_pool.open()
+            setup_checkpointer = AsyncPostgresSaver(_global_pool)
+            await setup_checkpointer.setup()
 
-        # Instantiate checkpointer on current active event loop so Lock is loop-safe
-        checkpointer = AsyncPostgresSaver(_global_pool)
-        await checkpointer.setup()
-        return checkpointer
+        return AsyncPostgresSaver(_global_pool)
     except Exception:
         logger.exception("Failed to initialize AsyncPostgresSaver; falling back to MemorySaver")
         return _global_memory_saver
