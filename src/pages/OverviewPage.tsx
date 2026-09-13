@@ -19,8 +19,8 @@ export function OverviewPage() {
           <div className="metric-top">
             <div className="card-title">System Health</div>
             <div className="metric-icon" style={{ background: 'var(--sev-2-dim)' }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#F5A524" strokeWidth="2">
-                <path d="M12 2v20M2 12h20" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="#F5A524" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
               </svg>
             </div>
           </div>
@@ -137,7 +137,7 @@ export function OverviewPage() {
                   <path d="M12 2l2.4 7.4H22l-6 4.4 2.3 7.2L12 16.6 5.7 21l2.3-7.2-6-4.4h7.6z" />
                 </svg>
               </div>
-              <div>
+              <div className="insight-content">
                 <div className="insight-text" dangerouslySetInnerHTML={{ __html: insight.text }} />
                 <div className="insight-time">{insight.timeAgo}</div>
               </div>

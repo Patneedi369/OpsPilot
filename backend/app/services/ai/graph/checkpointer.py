@@ -28,7 +28,10 @@ async def get_checkpointer() -> BaseCheckpointSaver:
 
     _ensure_windows_selector_policy()
     settings = get_settings()
-    db_url = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+    db_url = (
+        settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+        .replace("ssl=require", "sslmode=require")
+    )
 
     try:
         from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver

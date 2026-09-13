@@ -17,18 +17,26 @@ export class ApiError extends Error {
 }
 
 export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiBaseUrl()}${path}`, {
-    ...init,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      ...init?.headers,
-    },
-  });
-  if (!response.ok) {
-    throw new ApiError(response.status, `${response.status} ${response.statusText} for ${path}`);
+  const url = `${apiBaseUrl()}${path}`;
+  try {
+    const response = await fetch(url, {
+      ...init,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...init?.headers,
+      },
+    });
+    if (!response.ok) {
+      console.warn(`[OpsPilot API] HTTP ${response.status} ${response.statusText} for ${path}`);
+      throw new ApiError(response.status, `${response.status} ${response.statusText} for ${path}`);
+    }
+    return response.json() as Promise<T>;
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+    console.warn(`[OpsPilot API Network Alert] Failed to reach ${url}:`, err);
+    throw err;
   }
-  return response.json() as Promise<T>;
 }
 
 export interface HealthResponse {
@@ -47,7 +55,8 @@ export async function fetchIncidents(): Promise<Incident[]> {
       return mockIncidents;
     }
     return incidents;
-  } catch {
+  } catch (err) {
+    console.info('[OpsPilot API] Using resilience fallback for incident list:', err);
     return mockIncidents;
   }
 }
@@ -55,7 +64,8 @@ export async function fetchIncidents(): Promise<Incident[]> {
 export async function fetchIncidentById(incidentId: string): Promise<Incident | undefined> {
   try {
     return await apiRequest<Incident>(`/api/v1/incidents/${incidentId}`);
-  } catch {
+  } catch (err) {
+    console.info(`[OpsPilot API] Using resilience fallback for incident ${incidentId}:`, err);
     return getIncident(incidentId);
   }
 }
@@ -78,7 +88,8 @@ export async function fetchAuditLogs(roleHeader = 'Lead'): Promise<AuditLogRecor
     return await apiRequest<AuditLogRecord[]>('/api/v1/audit/logs', {
       headers: { 'X-User-Role': roleHeader },
     });
-  } catch {
+  } catch (err) {
+    console.info('[OpsPilot API] Using empty log array for audit logs fallback:', err);
     return [];
   }
 }
