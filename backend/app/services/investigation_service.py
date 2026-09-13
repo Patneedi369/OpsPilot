@@ -79,6 +79,12 @@ async def start_investigation_run(session: AsyncSession, incident_id: str) -> In
                         "final_result": result_dict,
                     },
                 )
+                await incident_repository.update_status(
+                    session,
+                    incident_id=incident_id,
+                    status="awaiting_approval",
+                    workflow_stage="remediation_proposal",
+                )
                 logger.info("investigation run paused at human_approval interrupt", extra={"run_id": run_id})
                 return updated_paused or db_run
 
@@ -98,6 +104,13 @@ async def start_investigation_run(session: AsyncSession, incident_id: str) -> In
                 "verification_result": final_state.get("verification_result"),
             },
         )
+        if status == "recovered":
+            await incident_repository.update_status(
+                session,
+                incident_id=incident_id,
+                status="resolved",
+                workflow_stage="resolution",
+            )
         return updated or db_run
     except Exception as exc:
         logger.exception("investigation run execution failed", extra={"run_id": run_id})
@@ -175,6 +188,29 @@ async def approve_run(
             "error_message": final_state.get("error"),
         },
     )
+
+    if status == "recovered":
+        await incident_repository.update_status(
+            session,
+            incident_id=run.incident_id,
+            status="resolved",
+            workflow_stage="resolution",
+        )
+    elif status == "awaiting_approval":
+        await incident_repository.update_status(
+            session,
+            incident_id=run.incident_id,
+            status="awaiting_approval",
+            workflow_stage="remediation_proposal",
+        )
+    elif status in ("executing", "verifying_recovery"):
+        await incident_repository.update_status(
+            session,
+            incident_id=run.incident_id,
+            status="executing" if status == "executing" else "verifying",
+            workflow_stage="execution" if status == "executing" else "verification",
+        )
+
     return updated or run
 
 
@@ -212,7 +248,14 @@ async def reject_run(session: AsyncSession, run_id: str, actor: str = "sre-lead"
             "verification_result": final_state.get("verification_result"),
         },
     )
+    await incident_repository.update_status(
+        session,
+        incident_id=run.incident_id,
+        status="monitoring",
+        workflow_stage="investigation",
+    )
     return updated or run
+
 
 
 async def investigate_incident(session: AsyncSession, incident_id: str) -> InvestigationResult:

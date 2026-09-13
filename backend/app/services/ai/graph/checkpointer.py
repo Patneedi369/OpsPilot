@@ -35,7 +35,10 @@ async def get_checkpointer() -> BaseCheckpointSaver:
 
     try:
         from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+        from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
         from psycopg_pool import AsyncConnectionPool
+
+        serializer = JsonPlusSerializer(allowed_msgpack_modules=True)
 
         if _global_pool is None:
             _global_pool = AsyncConnectionPool(
@@ -46,10 +49,10 @@ async def get_checkpointer() -> BaseCheckpointSaver:
                 open=False,
             )
             await _global_pool.open()
-            setup_checkpointer = AsyncPostgresSaver(_global_pool)
+            setup_checkpointer = AsyncPostgresSaver(_global_pool, serde=serializer)
             await setup_checkpointer.setup()
 
-        return AsyncPostgresSaver(_global_pool)
+        return AsyncPostgresSaver(_global_pool, serde=serializer)
     except Exception:
         logger.exception("Failed to initialize AsyncPostgresSaver; falling back to MemorySaver")
         return _global_memory_saver

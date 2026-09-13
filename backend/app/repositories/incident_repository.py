@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,9 +36,22 @@ class IncidentRepository:
         )
         return list(result.scalars().all())
 
-    async def list_deployments(self, session: AsyncSession, service_id: str) -> list[Deployment]:
-        return await self.list_deployments_for_service(session, service_id)
-
+    async def update_status(
+        self,
+        session: AsyncSession,
+        incident_id: str,
+        status: str,
+        workflow_stage: str | None = None,
+    ) -> Incident | None:
+        incident = await session.get(Incident, incident_id)
+        if incident is None:
+            return None
+        incident.status = status
+        if workflow_stage:
+            incident.workflow_stage = workflow_stage
+        await session.commit()
+        await session.refresh(incident)
+        return incident
 
 
 incident_repository = IncidentRepository()
