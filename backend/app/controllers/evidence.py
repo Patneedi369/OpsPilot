@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import get_db
+from app.persistence.session import get_db
 from app.repositories.incident_repository import incident_repository
 from app.repositories.investigation_repository import investigation_repository
 from app.schemas.evidence import EvidenceChainResponse

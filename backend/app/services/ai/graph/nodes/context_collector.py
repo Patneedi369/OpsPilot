@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 
-from app.db.session import SessionLocal
+from app.persistence.session import SessionLocal
 from app.repositories.incident_repository import incident_repository
 from app.services.ai.context import build_context
 from app.services.ai.graph.state import InvestigationGraphState

@@ -8,7 +8,7 @@ if sys.platform == "win32":
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
-from app.db.session import SessionLocal, engine
+from app.persistence.session import SessionLocal, engine
 from app.main import app
 from app.models.audit_log import AuditLog
 from app.models.incident import Incident

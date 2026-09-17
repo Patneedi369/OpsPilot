@@ -9,7 +9,7 @@ if sys.platform == "win32":
 from httpx import ASGITransport, AsyncClient
 
 from app.core.events import EventBus, event_bus
-from app.db.session import engine
+from app.persistence.session import engine
 from app.main import app
 
 

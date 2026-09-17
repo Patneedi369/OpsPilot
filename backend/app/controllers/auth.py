@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import get_db
+from app.persistence.session import get_db
 from app.dependencies.auth import AuthenticatedUser, get_current_user
 from app.schemas.auth import LoginRequest, TokenResponse, UserResponse
 from app.services.audit_service import log_audit

@@ -5,8 +5,8 @@ from sqlalchemy import delete, func, select
 
 from app.core.config import get_settings
 from app.core.logging import configure_logging
-from app.db.seed_data import DEPLOYMENTS, EVENTS, LOGS, incident_rows
-from app.db.session import SessionLocal, engine
+from app.persistence.seed_data import DEPLOYMENTS, EVENTS, LOGS, incident_rows
+from app.persistence.session import SessionLocal, engine
 from app.models.deployment import Deployment
 from app.models.incident import Incident
 from app.models.incident_event import IncidentEvent

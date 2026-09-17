@@ -5,7 +5,7 @@ import unittest
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-from app.db.session import SessionLocal, engine
+from app.persistence.session import SessionLocal, engine
 from app.repositories.investigation_repository import investigation_repository
 from app.services.investigation_service import (
     approve_run,

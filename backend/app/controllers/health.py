@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.redis import get_redis
-from app.db.session import get_db
+from app.persistence.session import get_db
 from app.schemas.incident import HealthResponse
 
 router = APIRouter()

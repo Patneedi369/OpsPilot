@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 
-# pyrefly: ignore [missing-import]
 from app.controllers.audit import router as audit_router
 from app.controllers.auth import router as auth_router
 from app.controllers.events import router as events_router

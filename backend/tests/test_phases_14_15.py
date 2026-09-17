@@ -9,7 +9,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app.core.config import get_settings
 from app.core.logging import sanitize_val
-from app.db.session import SessionLocal, engine
+from app.persistence.session import SessionLocal, engine
 from app.main import app
 from app.services.investigation_service import start_investigation_run
 
