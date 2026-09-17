@@ -4,7 +4,7 @@ from typing import Any
 
 from redis.asyncio import Redis
 
-from app.db.session import SessionLocal
+from app.persistence.session import SessionLocal
 from app.schemas.telemetry import TelemetrySignalIngest
 from app.services.detection_service import evaluate_and_correlate, ingest_signal
 

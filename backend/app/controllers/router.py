@@ -1,13 +1,14 @@
 from fastapi import APIRouter
 
-from app.api.routes.audit import router as audit_router
-from app.api.routes.auth import router as auth_router
-from app.api.routes.events import router as events_router
-from app.api.routes.evidence import router as evidence_router
-from app.api.routes.health import router as health_router
-from app.api.routes.incidents import router as incidents_router
-from app.api.routes.investigations import router as investigations_router
-from app.api.routes.telemetry import router as telemetry_router
+# pyrefly: ignore [missing-import]
+from app.controllers.audit import router as audit_router
+from app.controllers.auth import router as auth_router
+from app.controllers.events import router as events_router
+from app.controllers.evidence import router as evidence_router
+from app.controllers.health import router as health_router
+from app.controllers.incidents import router as incidents_router
+from app.controllers.investigations import router as investigations_router
+from app.controllers.telemetry import router as telemetry_router
 
 api_router = APIRouter()
 api_router.include_router(health_router, tags=["health"])

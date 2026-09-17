@@ -9,11 +9,11 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import Response
 
-from app.api.router import api_router
+from app.controllers.router import api_router
 from app.core.config import get_settings
 from app.core.correlation import RequestIDMiddleware, get_request_id
 from app.core.logging import configure_logging
-from app.db.session import engine
+from app.persistence.session import engine
 from app.models import Deployment, Incident, IncidentEvent, InvestigationRun, LogEntry  # noqa: F401
 
 settings = get_settings()
