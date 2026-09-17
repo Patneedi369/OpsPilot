@@ -2,9 +2,9 @@ import logging
 from typing import Callable
 
 from fastapi import Depends, Header, HTTPException, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession 
 
-from app.db.session import get_db
+from app.persistence.session import get_db
 from app.services.audit_service import log_audit
 from app.services.auth_service import decode_token
 
